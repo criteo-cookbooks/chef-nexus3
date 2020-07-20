@@ -40,7 +40,7 @@ load_current_value do |desired|
     ::Chef::Log.debug "Config is: #{config}"
     crontab config.dig('schedule', 'cronExpression') || ''.freeze
     task_type config['.typeId'] || ''.freeze
-    config['properties'].each do |key, value|
+    config['properties'].nil? || config['properties'].each do |key, value|
       properties[key] = value
     end
 
