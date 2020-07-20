@@ -1,6 +1,36 @@
+# List of nexus3 existing task types. The 'task_type' property must match any of
+# these values.
+NEXUS3_TASK_TYPES = [
+  'repository.docker.gc',
+  'repository.docker.upload-purge',
+  'repository.cleanup',
+  'repository.storage-facet-cleanup',
+  'repository.purge-unused',
+  'repository.maven.rebuild-metadata',
+  'healthcheck',
+  'repository.yum.rebuild.metadata',
+  'firewall.audit',
+  'tasklog.cleanup',
+  'repository.maven.publish-dotindex',
+  'repository.npm.reindex',
+  'create.browse.nodes',
+  'blobstore.rebuildComponentDB',
+  'repository.maven.remove-snapshots',
+  'repository.maven.purge-unused-snapshots',
+  'blobstore.compact',
+  'repository.maven.unpublish-dotindex',
+  'firewall.ignore-patterns',
+  'script',
+  'rebuild.asset.uploadMetadata',
+  'security.purge-api-keys',
+  'repository.rebuild-index',
+  'db.backup'
+].freeze
+
 property :task_name, String, name_property: true
-property :task_source, String, default: ''.freeze
-property :task_crontab, String, default: '0 1 * * * ?'.freeze
+property :task_type, String, equal_to: NEXUS3_TASK_TYPES
+property :properties, Hash, default: {}.freeze
+property :crontab, String, default: '0 1 * * * ?'.freeze
 property :api_client, ::Nexus3::Api, identity: true, default: lazy { ::Nexus3::Api.default(node) }
 
 load_current_value do |desired|
@@ -8,8 +38,12 @@ load_current_value do |desired|
     config = ::JSON.parse(api_client.run_script('get_task', desired.task_name))
     current_value_does_not_exist! if config.nil?
     ::Chef::Log.debug "Config is: #{config}"
-    task_source config['source'] || ''.freeze
-    task_crontab config.dig('schedule', 'cronExpression') || ''.freeze
+    crontab config.dig('schedule', 'cronExpression') || ''.freeze
+    task_type config['.typeId'] || ''.freeze
+    config['properties'].each do |key, value|
+      properties[key] = value
+    end
+
   # We rescue here because during the first run, the task will not exist yet, so we let Chef know that
   # the resource has to be created.
   rescue LoadError, ::Nexus3::ApiError => e
@@ -25,8 +59,9 @@ action :create do
     nexus3_api "upsert_task #{new_resource.task_name}" do
       script_name 'upsert_task'
       args name: new_resource.task_name,
-           source: new_resource.task_source,
-           crontab: new_resource.task_crontab
+           typeId: new_resource.task_type,
+           taskProperties: new_resource.properties,
+           crontab: new_resource.crontab
 
       action %i[create run]
       api_client new_resource.api_client

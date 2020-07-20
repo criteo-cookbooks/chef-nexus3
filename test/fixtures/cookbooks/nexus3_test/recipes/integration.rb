@@ -25,9 +25,12 @@ nexus3_role 'integration_role' do
 end
 
 nexus3_task 'integration_task' do
+  task_type 'script'
   task_crontab '0 2 * * * ?'
-  task_source 'log.info("Hello task");'
+  task_properties {'language' => 'lang',
+              'source' => 'log.info("Hello task");'}
 end
+
 
 nexus3_user 'integration_user' do
   password 'Secret'
