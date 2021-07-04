@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.0 2020-05-05
+
+- Task creation is now more generic. This change is breaking with any previous
+  usage of tasks. Please have a look at api_examples/task.rb for integration
+
 ## 3.6.0 2019-12-16
 
 - Knob to configure outbound proxy #106
